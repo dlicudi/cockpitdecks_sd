@@ -4,7 +4,7 @@ Special represenations for web decks, to draw a "hardware" button
 
 import logging
 
-from cockpitdecks.buttons.representation.hardware import VirtualLED, NO_ICON
+from cockpitdecks.buttons.representation.hardware import VirtualLED
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -18,6 +18,10 @@ class VirtualSDNeoLED(VirtualLED):
     """
 
     REPRESENTATION_NAME = "virtual-sd-neoled"
+
+    SCHEMA = {
+        "color": {"type": "color", "meta": {"label": "Color"}},
+    }
 
     def __init__(self, button: "Button"):
         VirtualLED.__init__(self, button=button)
