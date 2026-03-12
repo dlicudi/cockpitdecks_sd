@@ -69,13 +69,17 @@ Source = "https://github.com/devleaks/cockpitdecks_sd"
 #
 [tool.ruff]
 line-length = 160
-docstring-code-format = true
+
+[tool.ruff.lint]
 select = [
     "E",
     "F",
     "W",
 ]
 ignore = []
+
+[tool.ruff.format]
+docstring-code-format = true
 
 [tool.black]
 line-length = 160
