@@ -62,6 +62,9 @@ class Streamdeck(DeckWithIcons):
     #
     # Deck Specific Functions : Definition
     #
+    def requires_sequential_button_rendering_on_free_threaded_python(self) -> bool:
+        return True
+
     def make_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given
         #
@@ -244,19 +247,21 @@ class Streamdeck(DeckWithIcons):
     # Deck Specific Functions : Representation
     #
     def _send_touchscreen_image_to_device(self, image):
-        image = image.convert("RGB")
-        i = to_native_touchscreen_format(deck=self.device, image=image)
-        with self.device:
-            self.device.set_touchscreen_image(i, width=image.width, height=image.height)
+        with self._icon_render_lock:
+            image = image.convert("RGB")
+            i = to_native_touchscreen_format(deck=self.device, image=image)
+            with self.device:
+                self.device.set_touchscreen_image(i, width=image.width, height=image.height)
 
     def set_key_icon(self, key, image):
         if key in self.deck_type.special_displays():
             self._send_touchscreen_image_to_device(image=image)
             return
-        image = image.convert("RGB")
-        i = to_native_key_format(deck=self.device, image=image)
-        with self.device:
-            self.device.set_key_image(int(key), i)
+        with self._icon_render_lock:
+            image = image.convert("RGB")
+            i = to_native_key_format(deck=self.device, image=image)
+            with self.device:
+                self.device.set_key_image(int(key), i)
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
