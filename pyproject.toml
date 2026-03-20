@@ -48,7 +48,7 @@ classifiers = [
 requires-python = ">=3.10"
 
 dependencies = [
-    "cockpitdecks @ git+https://github.com/devleaks/cockpitdecks.git",
+    "cockpitdecks @ git+https://github.com/dlicudi/cockpitdecks.git",
     "pillow~=12.0",
     "streamdeck~=0.9.5"
 ]
