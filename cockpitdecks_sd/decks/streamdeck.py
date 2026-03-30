@@ -3,6 +3,7 @@
 import datetime
 import os
 import logging
+import time
 from datetime import datetime
 from PIL import Image, ImageOps
 
@@ -56,6 +57,7 @@ class Streamdeck(DeckWithIcons):
         if self.device is not None:
             self.device.set_poll_frequency(POLL_FREQ)
 
+        self._last_native_buffer = {}
         self.init()
 
     # #######################################
@@ -63,7 +65,7 @@ class Streamdeck(DeckWithIcons):
     # Deck Specific Functions : Definition
     #
     def requires_sequential_button_rendering_on_free_threaded_python(self) -> bool:
-        return True
+        return False
 
     def make_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given
@@ -257,11 +259,25 @@ class Streamdeck(DeckWithIcons):
         if key in self.deck_type.special_displays():
             self._send_touchscreen_image_to_device(image=image)
             return
+
+        # Image conversion is CPU-intensive (especially JPEG for XL) but PIL-based and
+        # thread-safe for separate images. Move it outside the shared _icon_render_lock
+        # to allow parallel processing across all buttons during page renders.
+        image = image.convert("RGB")
+        i = to_native_key_format(deck=self.device, image=image)
+
+        cache_key = str(key)
+        if self._last_native_buffer.get(cache_key) == i:
+            return  # Native buffer unchanged, skip hardware write
+
         with self._icon_render_lock:
-            image = image.convert("RGB")
-            i = to_native_key_format(deck=self.device, image=image)
+            self._last_native_buffer[cache_key] = i
             with self.device:
+                t0 = time.monotonic()
                 self.device.set_key_image(int(key), i)
+                write_ms = (time.monotonic() - t0) * 1000
+                if write_ms > 20.0:
+                    logger.warning(f"deck {self.name}: hardware write for key {key} took {write_ms:.1f}ms!")
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
